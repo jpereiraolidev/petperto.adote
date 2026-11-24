@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PetPerto - Adoção Responsiva de Animais</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- Header / Navbar -->
+  <header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl font-bold text-amber-600">🐾 PetPerto</span>
+      </div>
+      <nav class="space-x-4">
+        <a href="#pets" class="text-slate-600 hover:text-amber-600 font-medium">Encontrar Pet</a>
+        <button onclick="abrirModalLogin()" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition">Entrar</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="bg-amber-50 py-12 px-4 text-center">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Encontre seu novo melhor amigo</h1>
+      <p class="text-lg text-slate-600 mb-6">Conectamos protetores, ONGs e adotantes de forma rápida e segura.</p>
+      
+      <!-- Filtros de Busca -->
+      <div class="bg-white p-4 rounded-xl shadow-md flex flex-col sm:flex-row gap-3 justify-center">
+        <select id="filtroEspecie" class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option value="">Todas as Espécies</option>
+          <option value="CAO">Cachorros</option>
+          <option value="GATO">Gatos</option>
+        </select>
+        
+        <select id="filtroPorte" class="border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option value="">Todos os Portes</option>
+          <option value="PEQUENO">Pequeno</option>
+          <option value="MEDIO">Médio</option>
+          <option value="GRANDE">Grande</option>
+        </select>
+
+        <button onclick="carregarPets()" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-2 rounded-lg transition">Filtrar</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feed de Pets -->
+  <main class="max-w-6xl mx-auto px-4 py-10 flex-grow w-full" id="pets">
+    <h2 class="text-2xl font-bold mb-6 text-slate-800">Pets disponíveis para adoção</h2>
+    
+    <!-- Grid Dinâmico -->
+    <div id="grid-pets" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <!-- Os cards serão injetados via JavaScript -->
+      <p class="text-slate-500 col-span-full text-center py-10">Carregando pets...</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 text-center py-6 text-slate-500 text-sm">
+    <p>&copy; 2026 PetPerto. Todos os direitos reservados.</p>
+  </footer>
+
+  <!-- Script para Consumir a API -->
+  <script>
+    const API_URL = 'http://localhost:3000/api'; // Mude para a URL da Vercel quando fizer deploy do front/back
+
+    async function carregarPets() {
+      const especie = document.getElementById('filtroEspecie').value;
+      const porte = document.getElementById('filtroPorte').value;
+      
+      let url = `${API_URL}/pets?`;
+      if (especie) url += `especie=${especie}&`;
+      if (porte) url += `porte=${porte}&`;
+
+      const grid = document.getElementById('grid-pets');
+      grid.innerHTML = '<p class="text-slate-500 col-span-full text-center py-10">Buscando pets...</p>';
+
+      try {
+        const response = await fetch(url);
+        const pets = await response.json();
+
+        if (pets.length === 0) {
+          grid.innerHTML = '<p class="text-slate-500 col-span-full text-center py-10">Nenhum pet encontrado com esses filtros.</p>';
+          return;
+        }
+
+        grid.innerHTML = pets.map(pet => `
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100 hover:shadow-md transition flex flex-col">
+            <div class="h-48 bg-slate-200 relative">
+              <img src="${pet.fotos[0] || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1'}" alt="${pet.nome}" class="w-full h-full object-cover">
+              <span class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm text-xs font-semibold px-2.5 py-1 rounded-full text-amber-700 shadow-sm">${pet.porte}</span>
+            </div>
+            <div class="p-5 flex flex-col flex-grow">
+              <h3 class="text-xl font-bold text-slate-800 mb-1">${pet.nome}</h3>
+              <p class="text-slate-500 text-sm mb-3">${pet.raca || 'SRD'} • ${pet.idadeEstimada || 'Idade não informada'}</p>
+              <p class="text-slate-600 text-sm line-clamp-2 mb-4 flex-grow">${pet.descricaoTemperamento || 'Sem descrição informada.'}</p>
+              <button onclick="alert('Detalhes do pet: ${pet.id}')" class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium py-2 rounded-lg transition text-sm">Ver Detalhes / Adotar</button>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        console.error('Erro ao buscar pets:', error);
+        grid.innerHTML = '<p class="text-red-500 col-span-full text-center py-10">Erro ao carregar os pets. Verifique se o servidor está rodando.</p>';
+      }
+    }
+
+    function abrirModalLogin() {
+      alert('Funcionalidade de login/cadastro em breve!');
+    }
+
+    // Carrega os pets ao abrir a página
+    carregarPets();
+  </script>
+</body>
+</html>
